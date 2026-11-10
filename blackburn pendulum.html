@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>블랙번 진자 시뮬레이션</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  header {
+    background: linear-gradient(135deg, #161b22, #1f2937);
+    border-bottom: 1px solid #30363d;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(90deg, #58a6ff, #bc8cff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  header .subtitle {
+    font-size: 12px;
+    color: #8b949e;
+    margin-top: 2px;
+  }
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── 왼쪽 패널 ── */
+  .left-panel {
+    width: 280px;
+    min-width: 260px;
+    background: #161b22;
+    border-right: 1px solid #30363d;
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #58a6ff;
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #21262d;
+  }
+  .control-group { display: flex; flex-direction: column; gap: 10px; }
+  .control-row { display: flex; flex-direction: column; gap: 4px; }
+  .control-row label {
+    font-size: 12px;
+    color: #c9d1d9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .control-row label span {
+    font-weight: 700;
+    color: #58a6ff;
+    font-size: 13px;
+    min-width: 36px;
+    text-align: right;
+  }
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 5px;
+    border-radius: 3px;
+    background: #21262d;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #58a6ff;
+    cursor: pointer;
+    box-shadow: 0 0 6px rgba(88,166,255,0.5);
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 5px;
+    border-radius: 3px;
+    background: linear-gradient(to right, #58a6ff var(--val, 50%), #21262d var(--val, 50%));
+  }
+  .ratio-display {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 10px 14px;
+    text-align: center;
+  }
+  .ratio-display .ratio-text {
+    font-size: 20px;
+    font-weight: 700;
+    color: #58a6ff;
+    letter-spacing: 2px;
+  }
+  .ratio-display .ratio-label {
+    font-size: 10px;
+    color: #8b949e;
+    margin-top: 3px;
+  }
+
+  /* 프리셋 버튼 */
+  .presets-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .preset-btn {
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 8px 6px;
+    cursor: pointer;
+    color: #e6edf3;
+    font-size: 11px;
+    text-align: center;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .preset-btn:hover, .preset-btn.active {
+    background: #1f3a5c;
+    border-color: #58a6ff;
+    color: #58a6ff;
+  }
+  .preset-btn canvas {
+    width: 50px;
+    height: 50px;
+    border-radius: 4px;
+  }
+  .preset-btn .preset-label {
+    font-weight: 600;
+    font-size: 11px;
+  }
+  .preset-btn .preset-ratio {
+    font-size: 10px;
+    color: #8b949e;
+  }
+  .preset-btn.active .preset-ratio { color: #79c0ff; }
+
+  /* 색상 옵션 */
+  .color-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .color-opt {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .color-opt.selected { border-color: #fff; transform: scale(1.2); }
+
+  /* 제어 버튼 */
+  .btn-row { display: flex; gap: 8px; }
+  .btn {
+    flex: 1;
+    padding: 9px 6px;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .btn-start {
+    background: linear-gradient(135deg, #238636, #2ea043);
+    color: #fff;
+  }
+  .btn-start:hover { background: linear-gradient(135deg, #2ea043, #3fb950); }
+  .btn-pause {
+    background: linear-gradient(135deg, #9e6a03, #d29922);
+    color: #fff;
+  }
+  .btn-pause:hover { background: linear-gradient(135deg, #d29922, #e3b341); }
+  .btn-stop {
+    background: linear-gradient(135deg, #b62324, #da3633);
+    color: #fff;
+  }
+  .btn-stop:hover { background: linear-gradient(135deg, #da3633, #f85149); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* 정보 박스 */
+  .info-box {
+    background: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 11px;
+    color: #8b949e;
+    line-height: 1.6;
+  }
+  .info-box strong { color: #c9d1d9; }
+
+  /* ── 오른쪽 패널 ── */
+  .right-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: hidden;
+    padding: 14px;
+    gap: 10px;
+  }
+  .canvases-row {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+    overflow: hidden;
+  }
+  .canvas-container {
+    flex: 1;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .canvas-header {
+    padding: 8px 14px;
+    border-bottom: 1px solid #21262d;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .canvas-header h3 {
+    font-size: 12px;
+    font-weight: 600;
+    color: #c9d1d9;
+  }
+  .dot-indicator {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #3fb950;
+    animation: pulse 1.5s infinite;
+  }
+  .dot-indicator.paused { background: #d29922; animation: none; }
+  .dot-indicator.stopped { background: #f85149; animation: none; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .canvas-wrapper {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  canvas.sim-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+
+  /* 하단 상태 표시 */
+  .status-bar {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 8px 14px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #8b949e;
+  }
+  .status-item strong { color: #58a6ff; font-size: 12px; }
+
+  /* 드로잉 옵션 */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #c9d1d9;
+  }
+  .toggle {
+    position: relative;
+    width: 36px; height: 20px;
+  }
+  .toggle input { display: none; }
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: #21262d;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle input:checked + .toggle-track { background: #238636; }
+  .toggle-thumb {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 14px; height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(16px); }
+
+  /* 스크롤바 */
+  .left-panel::-webkit-scrollbar { width: 4px; }
+  .left-panel::-webkit-scrollbar-track { background: transparent; }
+  .left-panel::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🎯 블랙번 진자 시뮬레이션</h1>
+    <div class="subtitle">Blackburn Pendulum · Lissajous Curve Generator</div>
+  </div>
+</header>
+
+<div class="main">
+  <!-- ── 왼쪽 조작 패널 ── -->
+  <div class="left-panel">
+
+    <!-- 조작변인: 진자 길이 비 -->
+    <div>
+      <div class="section-title">📐 진자 길이 비 (Lx : Ly)</div>
+      <div class="control-group">
+        <div class="ratio-display">
+          <div class="ratio-text" id="ratioText">1 : 1</div>
+          <div class="ratio-label">주파수 비 (fx : fy) = <span id="freqRatio">1.00 : 1.00</span></div>
+        </div>
+        <div class="control-row">
+          <label>X축 진자 길이 (Lx) <span id="lxVal">1.0</span></label>
+          <input type="range" id="sliderLx" min="1" max="9" step="1" value="1">
+        </div>
+        <div class="control-row">
+          <label>Y축 진자 길이 (Ly) <span id="lyVal">1.0</span></label>
+          <input type="range" id="sliderLy" min="1" max="9" step="1" value="1">
+        </div>
+      </div>
+    </div>
+
+    <!-- 초기 위상차 -->
+    <div>
+      <div class="section-title">🔄 위상 & 감쇠</div>
+      <div class="control-group">
+        <div class="control-row">
+          <label>초기 위상차 (δ) <span id="phaseVal">0°</span></label>
+          <input type="range" id="sliderPhase" min="0" max="360" step="5" value="0">
+        </div>
+        <div class="control-row">
+          <label>감쇠 계수 (α) <span id="dampVal">0.000</span></label>
+          <input type="range" id="sliderDamp" min="0" max="20" step="1" value="0">
+        </div>
+        <div class="control-row">
+          <label>진폭 <span id="ampVal">1.0</span></label>
+          <input type="range" id="sliderAmp" min="3" max="10" step="1" value="8">
+        </div>
+        <div class="control-row">
+          <label>속도 배율 <span id="speedVal">1.0x</span></label>
+          <input type="range" id="sliderSpeed" min="1" max="30" step="1" value="10">
+        </div>
+      </div>
+    </div>
+
+    <!-- 리사쥬 프리셋 -->
+    <div>
+      <div class="section-title">📊 리사쥬 곡선 프리셋</div>
+      <div class="presets-grid" id="presetsGrid"></div>
+    </div>
+
+    <!-- 표시 옵션 -->
+    <div>
+      <div class="section-title">🎨 표시 옵션</div>
+      <div class="control-group">
+        <div class="toggle-row">
+          <span>궤적 표시</span>
+          <label class="toggle">
+            <input type="checkbox" id="showTrail" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <span>격자 표시</span>
+          <label class="toggle">
+            <input type="checkbox" id="showGrid" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <span>궤적 색상 그라디언트</span>
+          <label class="toggle">
+            <input type="checkbox" id="showGradient" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+        <div class="color-options" id="colorOptions">
+          <div class="color-opt selected" data-color="#58a6ff" style="background:#58a6ff"></div>
+          <div class="color-opt" data-color="#3fb950" style="background:#3fb950"></div>
+          <div class="color-opt" data-color="#ff7b72" style="background:#ff7b72"></div>
+          <div class="color-opt" data-color="#bc8cff" style="background:#bc8cff"></div>
+          <div class="color-opt" data-color="#ffa657" style="background:#ffa657"></div>
+          <div class="color-opt" data-color="#f78166" style="background:#f78166"></div>
+          <div class="color-opt" data-color="#ffffff" style="background:#ffffff"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 제어 버튼 -->
+    <div>
+      <div class="section-title">⚙️ 시뮬레이션 제어</div>
+      <div class="btn-row">
+        <button class="btn btn-start" id="btnStart">▶ 시작</button>
+        <button class="btn btn-pause" id="btnPause" disabled>⏸ 일시정지</button>
+        <button class="btn btn-stop" id="btnStop" disabled>⏹ 정지</button>
+      </div>
+    </div>
+
+    <!-- 설명 -->
+    <div class="info-box">
+      <strong>블랙번 진자란?</strong><br>
+      두 축의 진자 길이가 다를 때, 진동 주파수 비(fx:fy = √Ly:√Lx)에 따라 리사쥬 도형이 그려집니다.<br><br>
+      f ∝ 1/√L 이므로 길이가 짧을수록 주파수가 높아집니다.
+    </div>
+
+  </div>
+
+  <!-- ── 오른쪽 시뮬레이션 패널 ── -->
+  <div class="right-panel">
+    <div class="canvases-row">
+
+      <!-- 진자 모형 캔버스 -->
+      <div class="canvas-container" style="max-width: 340px; min-width: 240px;">
+        <div class="canvas-header">
+          <div class="dot-indicator" id="dotIndicator"></div>
+          <h3>블랙번 진자 모형</h3>
+        </div>
+        <div class="canvas-wrapper">
+          <canvas id="pendulumCanvas" class="sim-canvas"></canvas>
+        </div>
+      </div>
+
+      <!-- 리사쥬 곡선 캔버스 -->
+      <div class="canvas-container">
+        <div class="canvas-header">
+          <div class="dot-indicator" id="dotIndicator2"></div>
+          <h3>리사쥬 곡선 (실시간)</h3>
+        </div>
+        <div class="canvas-wrapper">
+          <canvas id="lissajousCanvas" class="sim-canvas"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 상태 바 -->
+    <div class="status-bar">
+      <div class="status-item">🕐 경과 시간: <strong id="statTime">0.00s</strong></div>
+      <div class="status-item">📐 Lx:Ly = <strong id="statRatio">1:1</strong></div>
+      <div class="status-item">📈 fx:fy = <strong id="statFreq">1.00:1.00</strong></div>
+      <div class="status-item">🔄 위상차 δ = <strong id="statPhase">0°</strong></div>
+      <div class="status-item">🖊 점 수: <strong id="statPoints">0</strong></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ───────────────────────────────────
+//  상태
+// ───────────────────────────────────
+let state = 'stopped'; // 'running' | 'paused' | 'stopped'
+let animId = null;
+let t = 0;
+let trailPoints = [];
+let trailColors = [];
+let trailMaxLen = 3000;
+
+let params = {
+  Lx: 1, Ly: 1,
+  phase: 0,        // degrees
+  damp: 0,
+  amp: 8,
+  speed: 1.0,
+  color: '#58a6ff',
+  showTrail: true,
+  showGrid: true,
+  showGradient: true,
+};
+
+// 프리셋 목록
+const presets = [
+  { label: '원 / 타원',   ratio: '1:1',  Lx:1, Ly:1, phase:90,  note:'원/타원' },
+  { label: '8자 곡선',    ratio: '1:2',  Lx:1, Ly:4, phase:0,   note:'∞모양' },
+  { label: '나비',        ratio: '2:3',  Lx:4, Ly:9, phase:90,  note:'나비형' },
+  { label: '삼엽형',      ratio: '1:3',  Lx:1, Ly:9, phase:90,  note:'삼엽형' },
+  { label: '사각형',      ratio: '2:1',  Lx:4, Ly:1, phase:90,  note:'사각형' },
+  { label: '오망성',      ratio: '2:5',  Lx:4, Ly:25,phase:90,  note:'별모양' },
+  { label: '직선',        ratio: '1:1',  Lx:1, Ly:1, phase:0,   note:'직선' },
+  { label: '3:4',         ratio: '3:4',  Lx:9, Ly:16,phase:90,  note:'복잡형' },
+];
+
+// ───────────────────────────────────
+//  캔버스 설정
+// ───────────────────────────────────
+const pendCanvas  = document.getElementById('pendulumCanvas');
+const lissCanvas  = document.getElementById('lissajousCanvas');
+const pCtx = pendCanvas.getContext('2d');
+const lCtx = lissCanvas.getContext('2d');
+
+function resizeCanvases() {
+  [pendCanvas, lissCanvas].forEach(c => {
+    const r = c.parentElement.getBoundingClientRect();
+    c.width  = r.width  * window.devicePixelRatio;
+    c.height = r.height * window.devicePixelRatio;
+    c.style.width  = r.width  + 'px';
+    c.style.height = r.height + 'px';
+  });
+}
+window.addEventListener('resize', () => { resizeCanvases(); if(state==='stopped') drawStatic(); });
+setTimeout(() => { resizeCanvases(); drawStatic(); }, 100);
+
+// ───────────────────────────────────
+//  물리 계산
+// ───────────────────────────────────
+function getOmegas() {
+  // ω ∝ 1/√L  → 정규화: Ly=1일때 기준
+  const ref = 2 * Math.PI; // 기준 각속도
+  const wx = ref / Math.sqrt(params.Lx);
+  const wy = ref / Math.sqrt(params.Ly);
+  return { wx, wy };
+}
+
+function getXY(time) {
+  const { wx, wy } = getOmegas();
+  const A = (params.amp / 10);
+  const damp = params.damp * 0.001;
+  const phase = params.phase * Math.PI / 180;
+  const decay = Math.exp(-damp * time);
+  const x = A * Math.cos(wx * time) * decay;
+  const y = A * Math.sin(wy * time + phase) * decay;
+  return { x, y };
+}
+
+// ───────────────────────────────────
+//  그리기 유틸
+// ───────────────────────────────────
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// ── 블랙번 진자 모형 그리기 ──
+function drawPendulum(px, py) {
+  const c = pendCanvas;
+  const ctx = pCtx;
+  const dpr = window.devicePixelRatio;
+  ctx.clearRect(0, 0, c.width, c.height);
+  const W = c.width, H = c.height;
+  const cx = W / 2, cy = H / 2;
+  const scale = Math.min(W, H) * 0.38;
+
+  // 배경 격자
+  if (params.showGrid) {
+    ctx.strokeStyle = 'rgba(48,54,61,0.5)';
+    ctx.lineWidth = dpr;
+    for (let i = -4; i <= 4; i++) {
+      const gx = cx + i * scale/4;
+      const gy = cy + i * scale/4;
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+    }
+    // 중심선
+    ctx.strokeStyle = 'rgba(88,166,255,0.15)';
+    ctx.lineWidth = dpr * 1.5;
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
+  }
+
+  const bobX = cx + px * scale;
+  const bobY = cy + py * scale;
+
+  // 천장 걸이점 (X축: 위)
+  const pivotTopX  = cx;
+  const pivotTopY  = cy - scale * 1.1;
+  // 측면 걸이점 (Y축: 오른쪽)
+  const pivotRightX = cx + scale * 1.1;
+  const pivotRightY = cy;
+
+  // X축 실 (파란색)
+  const gradX = ctx.createLinearGradient(pivotTopX, pivotTopY, bobX, bobY);
+  gradX.addColorStop(0, 'rgba(88,166,255,0.9)');
+  gradX.addColorStop(1, 'rgba(88,166,255,0.3)');
+  ctx.strokeStyle = gradX;
+  ctx.lineWidth = dpr * 2.5;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(pivotTopX, pivotTopY);
+  ctx.lineTo(bobX, bobY);
+  ctx.stroke();
+
+  // Y축 실 (보라색)
+  const gradY = ctx.createLinearGradient(pivotRightX, pivotRightY, bobX, bobY);
+  gradY.addColorStop(0, 'rgba(188,140,255,0.9)');
+  gradY.addColorStop(1, 'rgba(188,140,255,0.3)');
+  ctx.strokeStyle = gradY;
+  ctx.lineWidth = dpr * 2.5;
+  ctx.beginPath();
+  ctx.moveTo(pivotRightX, pivotRightY);
+  ctx.lineTo(bobX, bobY);
+  ctx.stroke();
+
+  // 걸이점들
+  const drawPivot = (x, y, color) => {
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(x, y, dpr*7, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#0d1117';
+    ctx.beginPath(); ctx.arc(x, y, dpr*3, 0, Math.PI*2); ctx.fill();
+  };
+  drawPivot(pivotTopX, pivotTopY, '#58a6ff');
+  drawPivot(pivotRightX, pivotRightY, '#bc8cff');
+
+  // 진자 추 (bob)
+  const bobR = dpr * 12;
+  const bobGrad = ctx.createRadialGradient(
+    bobX - bobR*0.3, bobY - bobR*0.3, bobR*0.1,
+    bobX, bobY, bobR
+  );
+  bobGrad.addColorStop(0, '#ffffff');
+  bobGrad.addColorStop(0.3, params.color);
+  bobGrad.addColorStop(1, hexToRgba(params.color, 0.6));
+  ctx.fillStyle = bobGrad;
+  ctx.shadowColor = params.color;
+  ctx.shadowBlur = dpr * 15;
+  ctx.beginPath(); ctx.arc(bobX, bobY, bobR, 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // 레이블
+  ctx.fillStyle = '#8b949e';
+  ctx.font = `${dpr*10}px sans-serif`;
+  ctx.fillText(`X축 실 (Lx=${params.Lx})`, pivotTopX + dpr*10, pivotTopY + dpr*5);
+  ctx.fillText(`Y축 실 (Ly=${params.Ly})`, pivotRightX - dpr*80, pivotRightY - dpr*12);
+}
+
+// ── 리사쥬 곡선 그리기 ──
+function drawLissajous(curPx, curPy) {
+  const c = lissCanvas;
+  const ctx = lCtx;
+  const dpr = window.devicePixelRatio;
+  ctx.clearRect(0, 0, c.width, c.height);
+  const W = c.width, H = c.height;
+  const cx = W/2, cy = H/2;
+  const scale = Math.min(W, H) * 0.42;
+
+  // 배경 격자
+  if (params.showGrid) {
+    ctx.strokeStyle = 'rgba(48,54,61,0.4)';
+    ctx.lineWidth = dpr;
+    for (let i = -5; i <= 5; i++) {
+      const gx = cx + i * scale/5;
+      const gy = cy + i * scale/5;
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(88,166,255,0.1)';
+    ctx.lineWidth = dpr * 1.5;
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
+
+    // 축 레이블
+    ctx.fillStyle = 'rgba(139,148,158,0.7)';
+    ctx.font = `${dpr*10}px sans-serif`;
+    ctx.fillText('X', W - dpr*20, cy - dpr*5);
+    ctx.fillText('Y', cx + dpr*5, dpr*16);
+  }
+
+  // 궤적
+  if (params.showTrail && trailPoints.length > 1) {
+    const len = trailPoints.length;
+    for (let i = 1; i < len; i++) {
+      const p0 = trailPoints[i-1];
+      const p1 = trailPoints[i];
+      const alpha = params.showGradient ? (i / len) * 0.85 + 0.1 : 0.7;
+      ctx.strokeStyle = hexToRgba(params.color, alpha);
+      ctx.lineWidth = dpr * (params.showGradient ? 1 + (i/len)*1.2 : 1.5);
+      ctx.beginPath();
+      ctx.moveTo(cx + p0.x * scale, cy + p0.y * scale);
+      ctx.lineTo(cx + p1.x * scale, cy + p1.y * scale);
+      ctx.stroke();
+    }
+  }
+
+  // 현재 위치 발광점
+  if (curPx !== undefined) {
+    const bx = cx + curPx * scale;
+    const by = cy + curPy * scale;
+    ctx.shadowColor = params.color;
+    ctx.shadowBlur = dpr * 18;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(bx, by, dpr*5, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = params.color;
+    ctx.beginPath(); ctx.arc(bx, by, dpr*3, 0, Math.PI*2); ctx.fill();
+  }
+
+  // 주파수 비 표시
+  const { wx, wy } = getOmegas();
+  const fxLabel = (wx / (2*Math.PI)).toFixed(2);
+  const fyLabel = (wy / (2*Math.PI)).toFixed(2);
+  ctx.fillStyle = 'rgba(88,166,255,0.6)';
+  ctx.font = `bold ${dpr*11}px sans-serif`;
+  ctx.fillText(`fx : fy = ${simplifyRatio(params.Lx, params.Ly)}`, dpr*12, H - dpr*12);
+}
+
+// 비율 단순화
+function simplifyRatio(Lx, Ly) {
+  // ω ∝ 1/√L → freq ratio = √Ly : √Lx
+  const a = Math.sqrt(Ly), b = Math.sqrt(Lx);
+  return `${a.toFixed(2)} : ${b.toFixed(2)}`;
+}
+
+function drawStatic() {
+  const { x, y } = getXY(0);
+  drawPendulum(x, y);
+  drawLissajous(x, y);
+}
+
+// ───────────────────────────────────
+//  애니메이션 루프
+// ───────────────────────────────────
+let lastTimestamp = null;
+
+function animate(ts) {
+  if (!lastTimestamp) lastTimestamp = ts;
+  const dt = (ts - lastTimestamp) / 1000;
+  lastTimestamp = ts;
+
+  t += dt * params.speed;
+
+  const { x, y } = getXY(t);
+
+  // 궤적 추가
+  if (params.showTrail) {
+    trailPoints.push({ x, y });
+    if (trailPoints.length > trailMaxLen) trailPoints.shift();
+  }
+
+  drawPendulum(x, y);
+  drawLissajous(x, y);
+  updateStatus();
+
+  animId = requestAnimationFrame(animate);
+}
+
+// ───────────────────────────────────
+//  UI 업데이트
+// ───────────────────────────────────
+function updateStatus() {
+  document.getElementById('statTime').textContent   = t.toFixed(2) + 's';
+  document.getElementById('statRatio').textContent  = params.Lx + ':' + params.Ly;
+  document.getElementById('statFreq').textContent   = simplifyRatio(params.Lx, params.Ly);
+  document.getElementById('statPhase').textContent  = params.phase + '°';
+  document.getElementById('statPoints').textContent = trailPoints.length;
+}
+
+function updateRatioDisplay() {
+  const { wx, wy } = getOmegas();
+  document.getElementById('ratioText').textContent = params.Lx + ' : ' + params.Ly;
+  const fxN = (wx/(2*Math.PI)).toFixed(2);
+  const fyN = (wy/(2*Math.PI)).toFixed(2);
+  document.getElementById('freqRatio').textContent = `${fxN} : ${fyN}`;
+  document.getElementById('statFreq').textContent  = `${fxN}:${fyN}`;
+}
+
+function setDotState(s) {
+  ['dotIndicator','dotIndicator2'].forEach(id => {
+    const el = document.getElementById(id);
+    el.className = 'dot-indicator';
+    if (s === 'paused') el.classList.add('paused');
+    if (s === 'stopped') el.classList.add('stopped');
+  });
+}
+
+// ───────────────────────────────────
+//  슬라이더 연결
+// ───────────────────────────────────
+function bindSlider(id, key, display, fmt) {
+  const el = document.getElementById(id);
+  const disp = document.getElementById(display);
+  const updateTrack = () => {
+    const pct = (el.value - el.min)/(el.max - el.min)*100;
+    el.style.setProperty('--val', pct+'%');
+  };
+  el.addEventListener('input', () => {
+    params[key] = parseFloat(el.value);
+    disp.textContent = fmt(params[key]);
+    updateTrack();
+    updateRatioDisplay();
+    if (state === 'stopped') { trailPoints = []; drawStatic(); }
+  });
+  updateTrack();
+}
+
+bindSlider('sliderLx',    'Lx',    'lxVal',    v => v.toFixed(0));
+bindSlider('sliderLy',    'Ly',    'lyVal',    v => v.toFixed(0));
+bindSlider('sliderPhase', 'phase', 'phaseVal', v => v.toFixed(0)+'°');
+bindSlider('sliderDamp',  'damp',  'dampVal',  v => (v*0.001).toFixed(3));
+bindSlider('sliderAmp',   'amp',   'ampVal',   v => (v/8).toFixed(1));
+bindSlider('sliderSpeed', 'speed', 'speedVal', v => (v/10).toFixed(1)+'x');
+params.speed = 1.0;
+
+// ───────────────────────────────────
+//  색상 옵션
+// ───────────────────────────────────
+document.querySelectorAll('.color-opt').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.color-opt').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    params.color = el.dataset.color;
+    if (state === 'stopped') drawStatic();
+  });
+});
+
+// ───────────────────────────────────
+//  토글
+// ───────────────────────────────────
+document.getElementById('showTrail').addEventListener('change', e => {
+  params.showTrail = e.target.checked;
+  if (!params.showTrail) trailPoints = [];
+});
+document.getElementById('showGrid').addEventListener('change', e => {
+  params.showGrid = e.target.checked;
+  if (state === 'stopped') drawStatic();
+});
+document.getElementById('showGradient').addEventListener('change', e => {
+  params.showGradient = e.target.checked;
+});
+
+// ───────────────────────────────────
+//  프리셋 미리보기 캔버스 생성
+// ───────────────────────────────────
+function buildPresetPreview(canvas, Lx, Ly, phase) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2, sc = W*0.4;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle = '#58a6ff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  const steps = 500;
+  const ref = 2*Math.PI;
+  const wx = ref/Math.sqrt(Lx), wy = ref/Math.sqrt(Ly);
+  const ph = phase * Math.PI/180;
+  for (let i=0; i<=steps; i++) {
+    const tt = (i/steps)*10;
+    const x = cx + Math.cos(wx*tt)*sc;
+    const y = cy + Math.sin(wy*tt+ph)*sc;
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+}
+
+const grid = document.getElementById('presetsGrid');
+presets.forEach((p, idx) => {
+  const btn = document.createElement('button');
+  btn.className = 'preset-btn';
+  btn.dataset.idx = idx;
+  const cv = document.createElement('canvas');
+  cv.width = 60; cv.height = 60;
+  buildPresetPreview(cv, p.Lx, p.Ly, p.phase);
+  const lbl = document.createElement('div');
+  lbl.className = 'preset-label';
+  lbl.textContent = p.label;
+  const rat = document.createElement('div');
+  rat.className = 'preset-ratio';
+  rat.textContent = 'Lx:Ly=' + p.Lx + ':' + p.Ly;
+  btn.appendChild(cv);
+  btn.appendChild(lbl);
+  btn.appendChild(rat);
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyPreset(p);
+  });
+  grid.appendChild(btn);
+});
+
+function applyPreset(p) {
+  params.Lx = p.Lx; params.Ly = p.Ly; params.phase = p.phase;
+  document.getElementById('sliderLx').value = p.Lx;
+  document.getElementById('sliderLy').value = p.Ly;
+  document.getElementById('sliderPhase').value = p.phase;
+  document.getElementById('lxVal').textContent = p.Lx;
+  document.getElementById('lyVal').textContent = p.Ly;
+  document.getElementById('phaseVal').textContent = p.phase + '°';
+  ['sliderLx','sliderLy','sliderPhase'].forEach(id => {
+    const el = document.getElementById(id);
+    const pct = (el.value - el.min)/(el.max - el.min)*100;
+    el.style.setProperty('--val', pct+'%');
+  });
+  updateRatioDisplay();
+  if (state === 'running') {
+    trailPoints = [];
+    t = 0;
+    lastTimestamp = null;
+  } else {
+    trailPoints = [];
+    drawStatic();
+  }
+}
+
+// ───────────────────────────────────
+//  제어 버튼
+// ───────────────────────────────────
+document.getElementById('btnStart').addEventListener('click', () => {
+  if (state === 'stopped') { t = 0; trailPoints = []; lastTimestamp = null; }
+  state = 'running';
+  document.getElementById('btnStart').disabled = true;
+  document.getElementById('btnPause').disabled = false;
+  document.getElementById('btnStop').disabled  = false;
+  setDotState('running');
+  if (animId) cancelAnimationFrame(animId);
+  animId = requestAnimationFrame(animate);
+});
+
+document.getElementById('btnPause').addEventListener('click', () => {
+  if (state === 'running') {
+    state = 'paused';
+    cancelAnimationFrame(animId); animId = null;
+    document.getElementById('btnStart').disabled = false;
+    document.getElementById('btnStart').textContent = '▶ 재개';
+    setDotState('paused');
+  }
+});
+
+document.getElementById('btnStop').addEventListener('click', () => {
+  state = 'stopped';
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  t = 0; trailPoints = []; lastTimestamp = null;
+  document.getElementById('btnStart').disabled  = false;
+  document.getElementById('btnStart').textContent = '▶ 시작';
+  document.getElementById('btnPause').disabled  = true;
+  document.getElementById('btnStop').disabled   = true;
+  setDotState('stopped');
+  updateStatus();
+  drawStatic();
+  // 슬라이더 초기화
+  resetParams();
+});
+
+function resetParams() {
+  params.Lx=1; params.Ly=1; params.phase=0; params.damp=0;
+  params.amp=8; params.speed=1.0;
+  ['sliderLx','sliderLy','sliderPhase','sliderDamp','sliderAmp','sliderSpeed'].forEach(id => {
+    const el = document.getElementById(id);
+    const def = { sliderLx:1, sliderLy:1, sliderPhase:0, sliderDamp:0, sliderAmp:8, sliderSpeed:10 };
+    el.value = def[id];
+    const pct = (el.value - el.min)/(el.max - el.min)*100;
+    el.style.setProperty('--val', pct+'%');
+  });
+  document.getElementById('lxVal').textContent    = '1';
+  document.getElementById('lyVal').textContent    = '1';
+  document.getElementById('phaseVal').textContent = '0°';
+  document.getElementById('dampVal').textContent  = '0.000';
+  document.getElementById('ampVal').textContent   = '1.0';
+  document.getElementById('speedVal').textContent = '1.0x';
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  updateRatioDisplay();
+  updateStatus();
+  drawStatic();
+}
+
+// ───────────────────────────────────
+//  초기화
+// ───────────────────────────────────
+updateRatioDisplay();
+setDotState('stopped');
+</script>
+</body>
+</html>
