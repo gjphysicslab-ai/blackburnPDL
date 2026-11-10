@@ -211,6 +211,12 @@
     color: #fff;
   }
   .btn-stop:hover { background: linear-gradient(135deg, #da3633, #f85149); }
+  .btn-clear {
+    background: linear-gradient(135deg, #1f4068, #1a6b8a);
+    color: #fff;
+    border: 1px solid #388bfd;
+  }
+  .btn-clear:hover { background: linear-gradient(135deg, #1a6b8a, #1f9fcf); }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* 정보 박스 */
@@ -451,6 +457,9 @@
         <button class="btn btn-start" id="btnStart">▶ 시작</button>
         <button class="btn btn-pause" id="btnPause" disabled>⏸ 일시정지</button>
         <button class="btn btn-stop" id="btnStop" disabled>⏹ 정지</button>
+      </div>
+      <div class="btn-row" style="margin-top:6px">
+        <button class="btn btn-clear" id="btnClear" disabled>🗑 궤적 지우기</button>
       </div>
     </div>
 
@@ -957,6 +966,7 @@ document.getElementById('btnStart').addEventListener('click', () => {
   document.getElementById('btnStart').disabled = true;
   document.getElementById('btnPause').disabled = false;
   document.getElementById('btnStop').disabled  = false;
+  document.getElementById('btnClear').disabled = false;
   setDotState('running');
   if (animId) cancelAnimationFrame(animId);
   animId = requestAnimationFrame(animate);
@@ -972,6 +982,10 @@ document.getElementById('btnPause').addEventListener('click', () => {
   }
 });
 
+document.getElementById('btnClear').addEventListener('click', () => {
+  trailPoints = [];
+});
+
 document.getElementById('btnStop').addEventListener('click', () => {
   state = 'stopped';
   if (animId) { cancelAnimationFrame(animId); animId = null; }
@@ -980,6 +994,7 @@ document.getElementById('btnStop').addEventListener('click', () => {
   document.getElementById('btnStart').textContent = '▶ 시작';
   document.getElementById('btnPause').disabled  = true;
   document.getElementById('btnStop').disabled   = true;
+  document.getElementById('btnClear').disabled  = true;
   setDotState('stopped');
   updateStatus();
   drawStatic();
